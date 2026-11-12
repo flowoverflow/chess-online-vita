@@ -35,6 +35,25 @@ The app is called **Chess Online** (title ID `CHESSONL1`). Its data lives in `ux
 | `games-cleared.txt` | the statistics put aside by "Clear statistics" |
 | `log.txt` | a short technical log, rotated past 512 KB |
 
+## Updates
+
+From 1.0.1 on, the app updates itself, and there is still only one VPK to install. To move from 1.0.0 to 1.0.1,
+install the 1.0.1 VPK once with VitaShell; after that the app updates by itself:
+1. At start it asks this repo's public GitHub releases for the latest version. No account and no key are needed.
+2. If that version is newer, Home shows **Update available** with **Install** and **Ask me later**.
+3. **Install** downloads the release's `ChessOnline-<version>.vpk`. It checks the file's size and the SHA-256 that
+   GitHub lists for it, and checks that the package is Chess Online's. Then it unpacks the package into
+   `ux0:data/ChessOnline/update/`.
+4. A running app can't replace its own files on the Vita. So the VPK carries a small helper app, Chess Online
+   Updater. The app installs the helper with the Vita's own installer and starts it.
+5. The helper copies the new files into place and backs up every file it replaces. If anything fails, it puts the
+   old files back. Then it reopens Chess Online.
+6. Chess Online shows **Update installed**, removes the helper again and deletes the downloaded files. Your
+   settings and statistics are not touched.
+
+A release for the updater needs a `ChessOnline-<version>.vpk` asset and a tag such as `v1.0.2`. Drafts and
+prereleases are skipped.
+
 ## Build
 
 The build uses VitaSDK 2026.08 (the regular hard-float SDK) with the vdpm packages `curl` and `libvita2d`, which bring
@@ -66,6 +85,9 @@ language table.
 | `tests/` | the host tests |
 | `res/` | pictures, fonts and the language flags packed into the VPK, with `res/LICENSES.md` |
 | `tools/cmg_check.py` | a small PC client for the guest server (Python standard library only), used as the partner in private test games |
+| `src/vita/updateui.c`, `src/portable/update.c`, `unzip.c`, `sfo.c` | the updater: the release check, the dialogs, download and checks, the zip reader |
+| `updater/` | Chess Online Updater, the helper app that copies an update into place; built by `scripts/build-updater.sh` and carried inside the VPK |
+| `tools/headbin/` | the helper's package header (GPL-3.0, see Licence) |
 
 ## AI assistance
 
@@ -80,3 +102,6 @@ artwork and every decision about what to build. Treat it like any other hobby co
 - The bundled pieces, board, fonts and pictures keep their own licences. They are listed, with their sources, in
   `res/LICENSES.md`.
 - The libraries linked into the app are listed in `THIRD-PARTY.md`.
+- `tools/headbin/` is a separate build tool under the **GPL-3.0**, derived from VitaShell. It makes the helper app's
+  package header, `res/updater/sce_sys/package/head.bin`, which is under the GPL-3.0 too. The app only copies that
+  file; no GPL code is compiled into it. See `tools/headbin/README.md`.

@@ -9,6 +9,7 @@
 
 enum {
     NET_TAG_CMG = 1, /* the guest transport: Coolmath's chess server (WebSocket or long-poll) */
+    NET_TAG_UPDATE,  /* the update check: GitHub's latest release of the app (1.0.1) */
     NET_TAG_COUNT
 };
 
@@ -44,6 +45,12 @@ int net_cmg_flush(int max_ms);
 int net_cmg_state(void);            /* 0 closed, 1 connecting, 2 open */
 int net_cmg_is_poll(void);
 int net_cmg_gen(void);
+
+/* Downloads an https:// URL into path, following up to 5 https redirects, on the caller's thread (1.0.1, the
+ * updater). *done and *total follow the transfer; a non-zero *cancel stops it. 0 when the whole file came with
+ * HTTP 200, else -1, with *http (0 when no answer) and *curl_rc saying why. */
+int net_download(const char *url, const char *path, volatile unsigned long long *done,
+                 volatile unsigned long long *total, volatile int *cancel, int *http, int *curl_rc);
 
 int net_poll(net_msg *m);
 void net_msg_free(net_msg *m);

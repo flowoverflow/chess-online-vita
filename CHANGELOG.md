@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.1 (2026-11-12)
+
+- The app updates itself. At start it checks this repo's latest GitHub release and offers **Install** or **Ask me
+  later**. Install downloads the update and checks its size, SHA-256 and title ID. The built-in helper app then puts
+  the files in place, keeps a backup and rolls back on failure, and the app reopens on the new version. Players still
+  install only one VPK.
+- The certificate bundle adds the USERTrust roots that GitHub uses.
+- The updater's texts are in all 18 languages.
+
 ## 1.0.0 (2026-11-12)
 
 First release. It was played through on a PS Vita 2000 (firmware 3.65).

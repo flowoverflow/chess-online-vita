@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include <curl/curl.h>
+#include <psp2/io/fcntl.h>
 #include <psp2/net/net.h>
 #include <psp2/net/netctl.h>
 #include <psp2/sysmodule.h>
@@ -268,6 +269,78 @@ void net_request_url(int tag, const char *method, const char *url, const char *b
     rtail = r;
     pthread_cond_signal(&rcond);
     pthread_mutex_unlock(&rlock);
+}
+
+/* ---- a file download (1.0.1, the updater) ---- */
+typedef struct {
+    SceUID fd;
+    int err;
+    volatile unsigned long long *done, *total;
+    volatile int *cancel;
+} dl_t;
+
+static size_t dl_write(char *data, size_t sz, size_t n, void *ud)
+{
+    dl_t *d = (dl_t *)ud;
+    size_t len = sz * n;
+    if (sceIoWrite(d->fd, data, (SceSize)len) != (int)len) {
+        d->err = 1;
+        return 0;
+    }
+    return len;
+}
+
+static int dl_progress(void *ud, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
+{
+    dl_t *d = (dl_t *)ud;
+    (void)ultotal;
+    (void)ulnow;
+    if (dltotal > 0) *d->total = (unsigned long long)dltotal;
+    *d->done = (unsigned long long)dlnow;
+    return *d->cancel ? 1 : 0;
+}
+
+int net_download(const char *url, const char *path, volatile unsigned long long *done,
+                 volatile unsigned long long *total, volatile int *cancel, int *http, int *curl_rc)
+{
+    CURL *c = curl_easy_init();
+    dl_t d;
+    long status = 0;
+    CURLcode rc = CURLE_FAILED_INIT;
+    *http = 0;
+    *curl_rc = (int)rc;
+    if (!c) return -1;
+    memset(&d, 0, sizeof d);
+    d.done = done;
+    d.total = total;
+    d.cancel = cancel;
+    d.fd = sceIoOpen(path, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0666);
+    if (d.fd < 0) {
+        plat_log("net: can't write %s (0x%08x)", path, (unsigned)d.fd);
+        curl_easy_cleanup(c);
+        return -1;
+    }
+    common_opts(c, url, NULL, "GET", NULL);
+    curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L); /* github.com answers 302 to its release-asset server */
+    curl_easy_setopt(c, CURLOPT_MAXREDIRS, 5L);
+    curl_easy_setopt(c, CURLOPT_PROTOCOLS_STR, "https");
+    curl_easy_setopt(c, CURLOPT_REDIR_PROTOCOLS_STR, "https");
+    curl_easy_setopt(c, CURLOPT_LOW_SPEED_LIMIT, 256L); /* give up after 30 s below 256 bytes a second */
+    curl_easy_setopt(c, CURLOPT_LOW_SPEED_TIME, 30L);
+    curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, dl_write);
+    curl_easy_setopt(c, CURLOPT_WRITEDATA, &d);
+    curl_easy_setopt(c, CURLOPT_XFERINFOFUNCTION, dl_progress);
+    curl_easy_setopt(c, CURLOPT_XFERINFODATA, &d);
+    curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
+    rc = curl_easy_perform(c);
+    curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &status);
+    sceIoClose(d.fd);
+    curl_easy_cleanup(c);
+    *http = (int)status;
+    *curl_rc = (int)rc;
+    plat_log("net: download %s -> HTTP %ld, %s, %llu bytes%s", url, status, curl_easy_strerror(rc), *done,
+             d.err ? " (write failed)" : "");
+    return rc == CURLE_OK && status == 200 && !d.err ? 0 : -1;
 }
 
 /* ---- guest mode transport: Coolmath's chess server ---- */

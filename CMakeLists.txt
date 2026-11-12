@@ -16,7 +16,7 @@ include("${VITASDK}/share/vita.cmake" REQUIRED)
 
 set(VITA_APP_NAME "Chess Online")
 set(VITA_TITLEID "CHESSONL1")
-set(VITA_VERSION "01.00")
+set(VITA_VERSION "01.01")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers")
 
@@ -32,6 +32,10 @@ add_executable(chessonline
   src/vita/tips.c
   src/vita/statsui.c
   src/vita/langui.c
+  src/vita/updateui.c
+  src/portable/update.c
+  src/portable/unzip.c
+  src/portable/sfo.c
   src/portable/gamelog.c
   src/portable/i18n.c
   src/portable/i18n_table.c
@@ -45,6 +49,11 @@ target_include_directories(chessonline PRIVATE src/portable src/vita)
 # see src/vita/textpad.c; set by scripts/chessonline/build.sh after a "segment 1 overlaps"
 set(CO_TEXT_PAD 1 CACHE STRING "bytes of text-segment pad")
 set_source_files_properties(src/vita/textpad.c PROPERTIES COMPILE_DEFINITIONS "CO_TEXT_PAD=${CO_TEXT_PAD}")
+# a test build that pretends to be an older version, to try the updater against the newest release (1.0.1)
+set(CO_VERSION "" CACHE STRING "APP_VERSION override for test builds (empty: main.c's own)")
+if(CO_VERSION)
+  target_compile_definitions(chessonline PRIVATE "APP_VERSION=\"${CO_VERSION}\"")
+endif()
 
 target_link_libraries(chessonline
   vita2d
@@ -55,9 +64,11 @@ target_link_libraries(chessonline
   SceAppUtil_stub SceCommonDialog_stub SceNet_stub SceNetCtl_stub SceRtc_stub
   ScePgf_stub ScePvf_stub SceAppMgr_stub SceProcessmgr_stub SceKernelThreadMgr_stub
   SceKernelModulemgr_stub SceIofilemgr_stub SceSysmem_stub SceLibKernel_stub SceHttp_stub SceSsl_stub
+  ScePromoterUtil_stub
 )
 
-vita_create_self(eboot.bin chessonline)
+# unsafe homebrew (1.0.1): the updater installs and removes its helper app with the system's installer
+vita_create_self(eboot.bin chessonline UNSAFE)
 
 # every file under res/: sce_sys/* keep their place, the rest go to res/ in the VPK
 file(GLOB_RECURSE RES_FILES RELATIVE "${CMAKE_SOURCE_DIR}/res" "${CMAKE_SOURCE_DIR}/res/*")

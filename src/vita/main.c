@@ -21,8 +21,12 @@
 #include "statsui.h"
 #include "tips.h"
 #include "ui.h"
+#include "updateui.h"
 
-#define APP_VERSION "1.0.0"
+/* a test build can pretend to be older with -DCO_VERSION=0.9.9 (scripts/chessonline/build.sh, CO_VERSION=...) */
+#ifndef APP_VERSION
+#define APP_VERSION "1.0.1"
+#endif
 #define SPLASH_MS 1800
 /* vita2d's vertex pool: three 1 MB regions, one per frame the GPU may still hold (see the render loop) */
 #define POOL_BYTES (3u * 1024u * 1024u)
@@ -126,7 +130,8 @@ static void handle_net(void)
     net_msg m;
     int budget = 200;
     while (budget-- > 0 && net_poll(&m)) {
-        if (m.kind == NM_RESPONSE) guest_on_response(&m);
+        if (m.kind == NM_RESPONSE && m.tag == NET_TAG_UPDATE) update_on_response(&m, A.now);
+        else if (m.kind == NM_RESPONSE) guest_on_response(&m);
         else guest_on_net(&m, A.now);
         net_msg_free(&m);
     }
@@ -574,6 +579,7 @@ int main(void)
     if (!A.logo56 || !A.logo140) plat_log("ui: logo pictures missing");
     A.start = plat_ms();
     guest_start(); /* sign in as a guest: join the lobby in the background */
+    update_init(APP_VERSION, A.start); /* 1.0.1: is there a newer release on GitHub? */
 
     for (;;) {
         int fonts_ready;
@@ -585,6 +591,7 @@ int main(void)
         boardui_touch_y = A.in.ty;
         handle_net();
         guest_timers(A.now);
+        update_timers(A.now);
         local_update(A.now);
         if (A.screen != SC_ONLINE && guest_showing()) A.screen = SC_ONLINE; /* a match can start any time */
         if (A.splash && A.now - A.start < SPLASH_MS) {
@@ -593,7 +600,9 @@ int main(void)
                 A.start = A.now - (SPLASH_MS - 350);
         } else if (!plat_ime_active()) {
             switch (A.screen) {
-            case SC_HOME: input_home(); break;
+            case SC_HOME:
+                if (!update_input(&A.in, A.now)) input_home(); /* an update dialog over Home takes the input */
+                break;
             case SC_AI_SETUP: input_ai_setup(); break;
             case SC_LOCAL:
                 if (local_input(&A.in, A.now)) A.screen = SC_HOME;
@@ -644,7 +653,10 @@ int main(void)
         if (fonts_ready) {
             ui_background();
             switch (A.screen) {
-            case SC_HOME: draw_home(1); break;
+            case SC_HOME:
+                draw_home(!update_showing());
+                if (update_showing()) update_draw(A.now);
+                break;
             case SC_AI_SETUP: draw_ai_setup(); break;
             case SC_LOCAL: local_draw(A.now); break;
             case SC_ONLINE:

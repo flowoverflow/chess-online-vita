@@ -23,6 +23,17 @@ Credits that these licences ask for in documentation:
 - Portions of this software are copyright © The FreeType Project (https://freetype.org). All rights reserved.
 - This software is based in part on the work of the Independent JPEG Group.
 
+The updater (1.0.1):
+
+- **VitaShell** (https://github.com/TheOfficialFloW/VitaShell, GPL-3.0, Copyright (C) 2015-2018 TheFloW).
+  - `tools/headbin/` is derived from its `package_installer.c` at commit `81af70971ba1`, and its template is
+    VitaShell's `release/head.bin`.
+  - That tool and the header it makes (`res/updater/sce_sys/package/head.bin`) are under the GPL-3.0, with the
+    licence in `tools/headbin/COPYING`.
+  - No VitaShell code is compiled into the app.
+- **pkgj** (https://github.com/blastrock/pkgj, BSD-2-Clause). The order of loading the system's PAF module before
+  its installer, and the PAF argument values the app passes, follow pkgj's `src/vita.cpp`. No pkgj code is copied.
+
 `third_party/licenses/` holds the licence files exactly as VitaSDK's vdpm ships them, in `share/vdpm/licenses`. For
 the other libraries, see their upstream projects. The pieces, the board, the fonts and the pictures are listed in
 `res/LICENSES.md`.
