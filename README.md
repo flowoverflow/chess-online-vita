@@ -1,6 +1,57 @@
-# Chess Online for PS Vita
+<h1 align="center">Chess Online for PS Vita</h1>
 
-An unofficial homebrew chess app for the PlayStation Vita, written in C with vita2d.
+<p align="center">
+  An unofficial homebrew chess app for the PlayStation Vita.<br>
+  Play the computer offline, or play people online as a guest.
+</p>
+
+<p align="center">
+  <a href="https://github.com/flowoverflow/chess-online-vita/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/flowoverflow/chess-online-vita?label=download&color=f5b301"></a>
+  <img alt="Platform: PS Vita" src="https://img.shields.io/badge/platform-PS%20Vita-003791">
+  <img alt="18 languages" src="https://img.shields.io/badge/languages-18-2ea44f">
+  <a href="LICENSE"><img alt="Licence: MIT" src="https://img.shields.io/badge/licence-MIT-blue"></a>
+</p>
+
+<p align="center">
+  <img src="media/screenshots/home.png" width="860" alt="Chess Online's home screen: Random opponent, Play vs computer, Play a friend, your stats and chess tips">
+</p>
+
+## Watch it
+
+A one-minute tour of the app:
+
+https://github.com/user-attachments/assets/9b80d7b5-d88e-4ba8-96ba-b64ffe1473bf
+
+<details>
+<summary><b>Watch in another language:</b> Français · 日本語 · Polski · Português do Brasil · Русский · Español</summary>
+
+#### Français (French)
+
+https://github.com/user-attachments/assets/b0d17924-4d09-4fdc-93d5-47c1ec3b4726
+
+#### 日本語 (Japanese)
+
+https://github.com/user-attachments/assets/a1e8aa6b-8d0e-4cd2-aec1-b2c8512344f9
+
+#### Polski (Polish)
+
+https://github.com/user-attachments/assets/d5bc9fbc-c414-4c08-ae3b-bea50fdfd42c
+
+#### Português do Brasil (Brazilian Portuguese)
+
+https://github.com/user-attachments/assets/576900f8-e064-4ffb-9a2d-2252307c6d53
+
+#### Русский (Russian)
+
+https://github.com/user-attachments/assets/eee8d474-7c69-41ae-b72e-e1ffb78bbc21
+
+#### Español (Spanish)
+
+https://github.com/user-attachments/assets/37f31502-fcc3-452a-93db-f69265e5762e
+
+</details>
+
+## Features
 
 - **Play vs computer.** It has its own engine with eight levels. The engine runs on the Vita, so this works offline.
 - **Random opponent and Play a friend.** Guest games on the public Coolmath Games chess server
@@ -10,20 +61,76 @@ An unofficial homebrew chess app for the PlayStation Vita, written in C with vit
 - **Your statistics.** Kept on the Vita: results by colour, by level and by speed, streaks and recent games.
 - **18 languages,** one for each system language the Vita offers. The app follows the Vita's own setting until you
   pick one in the app.
+- **Updates itself.** When a new release is out, the app offers to install it. There is only ever one VPK to install.
 
-This project is not affiliated with, endorsed by or connected to Coolmath Games. The app uses their guest server the
-way a guest does:
-- no account, login, cookie or page token;
-- an honest User-Agent (`ChessOnline/<version> (PS Vita homebrew; personal use)`) and no Origin header.
+> [!NOTE]
+> This project is not affiliated with, endorsed by or connected to Coolmath Games. The app uses their guest server the
+> way a guest does: no account, login, cookie or page token, an honest User-Agent
+> (`ChessOnline/<version> (PS Vita homebrew; personal use)`) and no Origin header. The server can change or refuse
+> this client at any time. Play vs computer, the lessons and the statistics keep working without it.
 
-The server can change or refuse this client at any time. Play vs computer, the lessons and the statistics keep
-working without it.
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="media/screenshots/play-vs-computer.png" alt="Play vs computer: pick a level from 1 to 8 and your colour">
+      <br><sub><b>Play vs computer.</b> Eight levels, and the engine runs on the Vita.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="media/screenshots/game-vs-computer.png" alt="A game against the computer, with the legal moves marked and the move list">
+      <br><sub><b>A game against the computer,</b> with the legal moves marked.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="media/screenshots/random-opponent.png" alt="Random opponent: the list of waiting games and the form to create one">
+      <br><sub><b>Random opponent.</b> Join a waiting game or create your own.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="media/screenshots/online-game.png" alt="An online game with both players' clocks">
+      <br><sub><b>Online games</b> with the server's clocks.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="media/screenshots/play-a-friend.png" alt="Play a friend: a six-letter game code to send to a friend">
+      <br><sub><b>Play a friend.</b> Send them a six-letter code.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="media/screenshots/languages.png" alt="The language list with 18 languages">
+      <br><sub><b>18 languages.</b> The app starts in the Vita's own language.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="media/screenshots/chess-tips.png" alt="Chess tips: five lessons">
+      <br><sub><b>Chess tips.</b> Five short lessons.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="media/screenshots/chess-tip.png" alt="A lesson step: arrows on the board show the lines a move opens">
+      <br><sub><b>A lesson,</b> played out on the board.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="media/screenshots/statistics.png" alt="Your statistics: results overall and by colour, streaks, time played">
+      <br><sub><b>Your statistics,</b> kept on the Vita.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="media/screenshots/recent-games.png" alt="Recent games: each result and how the game ended">
+      <br><sub><b>Recent games,</b> with how each one ended.</sub>
+    </td>
+  </tr>
+</table>
 
 ## Install
 
 You need a PS Vita that runs homebrew, with VitaShell.
 
-1. Copy `ChessOnline-<version>.vpk` from the release to the Vita, for example to `ux0:data/`.
+1. Download `ChessOnline-<version>.vpk` from the
+   [latest release](https://github.com/flowoverflow/chess-online-vita/releases/latest) and copy it to the Vita, for
+   example to `ux0:data/`.
 2. Open it in VitaShell and install it. Accept the extended permissions prompt.
 
 The app is called **Chess Online** (title ID `CHESSONL1`). Its data lives in `ux0:data/ChessOnline/`:
@@ -96,6 +203,7 @@ language table.
 | `src/vita/updateui.c`, `src/portable/update.c`, `unzip.c`, `sfo.c` | the updater: the release check, the dialogs, download and checks, the zip reader |
 | `updater/` | Chess Online Updater, the helper app that copies an update into place; built by `scripts/build-updater.sh` and carried inside the VPK |
 | `tools/headbin/` | the helper's package header (GPL-3.0, see Licence) |
+| `media/` | the screenshots in this README |
 
 ## AI assistance
 
