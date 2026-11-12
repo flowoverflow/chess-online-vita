@@ -17,6 +17,7 @@
 #include <psp2/sysmodule.h>
 
 #include "guest.h"
+#include "json.h"
 #include "sfo.h"
 #include "ui.h"
 #include "unzip.h"
@@ -326,6 +327,11 @@ static void start_thread(void *(*fn)(void *))
 }
 
 /* ---------- the worker: download, check, unpack ---------- */
+static void request_release(uint64_t now);
+static int fetch_package(const char *part, int *http, int *rc);
+#ifdef CO_TEST_FEED
+static int feed_fail_after; /* defined with the test feed, below */
+#endif
 static void *fail(const char *why)
 {
     plat_log("update: %s", why);
@@ -347,7 +353,7 @@ static void *worker(void *arg)
     sceIoMkdir(UPD_DIR, 0777);
     snprintf(U.vpk_path, sizeof U.vpk_path, UPD_DIR "/%s", U.rel.asset);
     snprintf(part, sizeof part, "%s.part", U.vpk_path);
-    if (net_download(U.rel.url, part, &U.done, &U.total, &U.cancel, &http, &rc)) {
+    if (fetch_package(part, &http, &rc)) {
         sceIoRemove(part);
         if (U.cancel) {
             plat_log("update: download cancelled");
@@ -413,6 +419,10 @@ static void *worker(void *arg)
     }
     free(vpk);
     snprintf(msg, sizeof msg, "v1 %s\n%s\n", U.rel.version, U.rel.asset);
+#ifdef CO_TEST_FEED
+    if (feed_fail_after >= 0)
+        snprintf(msg + strlen(msg), sizeof msg - strlen(msg), "test-fail-after %d\n", feed_fail_after);
+#endif
     if (plat_write_file(UPD_JOB, msg, strlen(msg))) return fail("can't write the job file");
     plat_log("update: %u files unpacked into " UPD_NEW "; the job is written", files);
     U.phase = ensure_helper() ? P_NO_HELPER : P_DONE;
@@ -440,6 +450,7 @@ static void launch_helper(void)
         guest_start(); /* still here: the lobby connection comes back */
         U.state = U_RESULT;
         U.result = R_MANUAL;
+        U.asked = 1;
         return;
     }
     sceKernelExitProcess(0);
@@ -462,6 +473,7 @@ void update_init(const char *version, uint64_t now)
             U.state = U_RESULT;
         } else if (!strcmp(word, "failed")) {
             U.result = R_FAILED;
+            U.asked = 1; /* no new offer this session after a failed update (1.0.1 test, 2026-11-12) */
             U.state = U_RESULT;
         }
         free(s);
@@ -469,7 +481,7 @@ void update_init(const char *version, uint64_t now)
         start_thread(remove_helper);
         cleanup_after_update();
     }
-    net_request_url(NET_TAG_UPDATE, "GET", UPD_API_URL, NULL, 0);
+    request_release(now);
 }
 
 void update_on_response(const net_msg *m, uint64_t now)
@@ -498,11 +510,87 @@ void update_on_response(const net_msg *m, uint64_t now)
     plat_log("update: %s is available (%s, %llu bytes)", r.tag, r.asset, r.size);
 }
 
+/* ---------- the release source ----------
+ * A test build (CO_TEST_FEED=1 bash scripts/chessonline/build.sh) reads the "latest release" and its package from
+ * ux0:data/ChessOnline/test-feed/ instead of GitHub, so the next-update path (1.0.1 -> a newer version) and the
+ * failure paths can be tried without publishing anything. The answer is parsed by the same upd_parse_release and the
+ * package goes through the same checks; only where the bytes come from differs. A release build has none of this. */
+#ifdef CO_TEST_FEED
+#define UPD_FEED_DIR CO_DATA_DIR "/test-feed"
+static int feed_fail_after = -1; /* "test_fail_after": the test helper stops after this many changed files */
+
+static void request_release(uint64_t now)
+{
+    net_msg m;
+    size_t len = 0;
+    char *s = plat_read_file(UPD_FEED_DIR "/latest.json", &len);
+    memset(&m, 0, sizeof m);
+    m.kind = NM_RESPONSE;
+    m.tag = NET_TAG_UPDATE;
+    m.status = s ? 200 : 404;
+    m.data = s;
+    m.len = len;
+    if (s) {
+        jval *root = json_parse(s, len);
+        feed_fail_after = root ? (int)json_num(root, "test_fail_after", -1) : -1;
+        json_free(root);
+    }
+    plat_log("update: test feed: " UPD_FEED_DIR "/latest.json %s (stop after %d files)", s ? "read" : "missing",
+             feed_fail_after);
+    update_on_response(&m, now);
+    free(s);
+}
+
+static int fetch_package(const char *part, int *http, int *rc)
+{
+    static unsigned char buf[64 * 1024];
+    char from[256];
+    const char *name = strrchr(U.rel.url, '/');
+    SceUID a, b;
+    int n, ok = 1;
+    snprintf(from, sizeof from, UPD_FEED_DIR "/%s", name ? name + 1 : U.rel.asset);
+    *http = 0;
+    *rc = 0;
+    a = sceIoOpen(from, SCE_O_RDONLY, 0);
+    if (a < 0) return -1;
+    b = sceIoOpen(part, SCE_O_WRONLY | SCE_O_CREAT | SCE_O_TRUNC, 0666);
+    if (b < 0) {
+        sceIoClose(a);
+        return -1;
+    }
+    U.done = 0;
+    while ((n = sceIoRead(a, buf, sizeof buf)) > 0) {
+        if (sceIoWrite(b, buf, (SceSize)n) != n || U.cancel) {
+            ok = 0;
+            break;
+        }
+        U.done += (unsigned)n;
+    }
+    if (n < 0) ok = 0;
+    sceIoClose(a);
+    sceIoClose(b);
+    *http = ok ? 200 : 0;
+    plat_log("update: test feed: copied %s (%llu bytes)%s", from, U.done, ok ? "" : ", failed");
+    return ok ? 0 : -1;
+}
+#else
+static void request_release(uint64_t now)
+{
+    (void)now;
+    net_request_url(NET_TAG_UPDATE, "GET", UPD_API_URL, NULL, 0);
+}
+
+static int fetch_package(const char *part, int *http, int *rc)
+{
+    return net_download(U.rel.url, part, &U.done, &U.total, &U.cancel, http, rc);
+}
+#endif
+
 void update_timers(uint64_t now)
 {
     if (U.retry_at && now >= U.retry_at) {
         U.retry_at = 0;
-        net_request_url(NET_TAG_UPDATE, "GET", UPD_API_URL, NULL, 0);
+        request_release(now);
     }
     if (U.state == U_NONE && U.offer_ready && !U.asked) {
         U.state = U_OFFER;
@@ -515,9 +603,11 @@ void update_timers(uint64_t now)
         } else if (U.phase == P_FAILED) {
             U.state = U_RESULT;
             U.result = R_FAILED;
+            U.asked = 1; /* no new offer this session after a failed update (1.0.1 test, 2026-11-12) */
         } else if (U.phase == P_NO_HELPER) { /* the files are ready, but only VitaShell can install them */
             U.state = U_RESULT;
             U.result = R_MANUAL;
+            U.asked = 1;
         } else if (U.phase == P_CANCELLED) {
             U.state = U_NONE;
             U.asked = 1;

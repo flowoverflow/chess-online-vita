@@ -40,7 +40,7 @@ sha256sum "$H/eboot.bin" | sed 's/^/helper app: /'
 
 build() {
   rm -f "$OUT/chessonline.vpk" "$OUT/eboot.bin"
-  cmake -S "$SRC" -B "$OUT" -DCMAKE_BUILD_TYPE=Release -DCO_TEXT_PAD="$1" -DCO_VERSION="${CO_VERSION:-}" > "$OUT.configure.log" 2>&1 || { cat "$OUT.configure.log"; exit 1; }
+  cmake -S "$SRC" -B "$OUT" -DCMAKE_BUILD_TYPE=Release -DCO_TEXT_PAD="$1" -DCO_VERSION="${CO_VERSION:-}" -DCO_SFO_VERSION="${CO_SFO_VERSION:-}" -DCO_TEST_FEED="${CO_TEST_FEED:-}" > "$OUT.configure.log" 2>&1 || { cat "$OUT.configure.log"; exit 1; }
   set +e
   cmake --build "$OUT" -j"$(nproc)" > "$OUT.build.log" 2>&1
   local rc=$?

@@ -54,6 +54,14 @@ install the 1.0.1 VPK once with VitaShell; after that the app updates by itself:
 A release for the updater needs a `ChessOnline-<version>.vpk` asset and a tag such as `v1.0.2`. Drafts and
 prereleases are skipped.
 
+To try an update without publishing anything, use a test build: `CO_TEST_FEED=1 bash scripts/build.sh`.
+- It reads the "latest release" from `ux0:data/ChessOnline/test-feed/latest.json` (GitHub's format) and the package
+  from the same folder.
+- A `"test_fail_after": N` field there makes its test helper stop after N files, to try the rollback.
+- `CO_VERSION=0.9.9` builds an app that reports itself older, and `CO_SFO_VERSION=01.02` changes param.sfo's
+  version.
+- A normal build has none of this.
+
 ## Build
 
 The build uses VitaSDK 2026.08 (the regular hard-float SDK) with the vdpm packages `curl` and `libvita2d`, which bring

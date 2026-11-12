@@ -21,6 +21,11 @@ set(VITA_VERSION "01.00")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-format-truncation")
 
 add_executable(updater src/main.c ../src/portable/sfo.c)
+# a test build's helper (CO_TEST_FEED=1 build.sh): honours "test-fail-after N" in the job, to try the rollback
+set(CO_TEST "" CACHE STRING "1: the test helper")
+if(CO_TEST)
+  target_compile_definitions(updater PRIVATE CO_TEST=1)
+endif()
 target_include_directories(updater PRIVATE ../src/portable)
 target_link_libraries(updater
   vita2d freetype bz2 png16 jpeg z m

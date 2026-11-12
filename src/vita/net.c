@@ -149,6 +149,7 @@ static void *worker_main(void *arg)
     for (;;) {
         req *r;
         body_t body = {0, 0};
+        char err[CURL_ERROR_SIZE];
         struct curl_slist *h;
         long status = 0;
         CURLcode rc;
@@ -173,13 +174,25 @@ static void *worker_main(void *arg)
             curl_easy_setopt(c, CURLOPT_TIMEOUT, 30L);
             curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, body_write);
             curl_easy_setopt(c, CURLOPT_WRITEDATA, &body);
+            err[0] = 0;
+            curl_easy_setopt(c, CURLOPT_ERRORBUFFER, err);
             rc = curl_easy_perform(c);
             curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &status);
+            if (rc == CURLE_OK) {
+                char *ip = NULL;
+                curl_easy_getinfo(c, CURLINFO_PRIMARY_IP, &ip);
+                if (ip && ip[0] && strstr(r->path, "api.github.com")) plat_log("net: (server %s)", ip);
+            }
             curl_slist_free_all(h);
         } else {
             rc = CURLE_FAILED_INIT;
         }
         plat_log("net: %s %s -> HTTP %ld, %s", r->method, r->path, status, curl_easy_strerror(rc));
+        if (rc != CURLE_OK && c && err[0]) {
+            char *ip = NULL;
+            curl_easy_getinfo(c, CURLINFO_PRIMARY_IP, &ip);
+            plat_log("net: (%s; server %s)", err, ip && ip[0] ? ip : "?");
+        }
         if (status == 429) {
             rate_until = plat_ms() + 61000;
             plat_log("net: rate limited; waiting a minute before the next request");
@@ -307,6 +320,7 @@ int net_download(const char *url, const char *path, volatile unsigned long long 
     dl_t d;
     long status = 0;
     CURLcode rc = CURLE_FAILED_INIT;
+    char err[CURL_ERROR_SIZE] = "";
     *http = 0;
     *curl_rc = (int)rc;
     if (!c) return -1;
@@ -332,7 +346,9 @@ int net_download(const char *url, const char *path, volatile unsigned long long 
     curl_easy_setopt(c, CURLOPT_XFERINFOFUNCTION, dl_progress);
     curl_easy_setopt(c, CURLOPT_XFERINFODATA, &d);
     curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
+    curl_easy_setopt(c, CURLOPT_ERRORBUFFER, err);
     rc = curl_easy_perform(c);
+    if (rc != CURLE_OK && err[0]) plat_log("net: download (%s)", err);
     curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &status);
     sceIoClose(d.fd);
     curl_easy_cleanup(c);

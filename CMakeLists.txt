@@ -33,6 +33,7 @@ add_executable(chessonline
   src/vita/statsui.c
   src/vita/langui.c
   src/vita/updateui.c
+  src/vita/netresolve.c
   src/portable/update.c
   src/portable/unzip.c
   src/portable/sfo.c
@@ -54,6 +55,18 @@ set(CO_VERSION "" CACHE STRING "APP_VERSION override for test builds (empty: mai
 if(CO_VERSION)
   target_compile_definitions(chessonline PRIVATE "APP_VERSION=\"${CO_VERSION}\"")
 endif()
+# test builds: param.sfo's APP_VER (an update VPK that changes it), and the local release source (updateui.c)
+set(CO_SFO_VERSION "" CACHE STRING "param.sfo APP_VER override for test builds")
+if(CO_SFO_VERSION)
+  set(VITA_VERSION "${CO_SFO_VERSION}")
+endif()
+set(CO_TEST_FEED "" CACHE STRING "1: read releases from ux0:data/ChessOnline/test-feed (updateui.c)")
+if(CO_TEST_FEED)
+  target_compile_definitions(chessonline PRIVATE CO_TEST_FEED=1)
+endif()
+
+# name lookups one at a time: every getaddrinfo, curl's too, goes through src/vita/netresolve.c (1.0.1)
+target_link_options(chessonline PRIVATE "-Wl,--wrap=getaddrinfo,--wrap=freeaddrinfo")
 
 target_link_libraries(chessonline
   vita2d

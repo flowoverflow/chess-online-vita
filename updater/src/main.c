@@ -293,7 +293,7 @@ int main(void)
     char *job, msg[300], ver[32] = "", title[16];
     unsigned char *sfo;
     size_t sfo_len = 0;
-    int i, waited, changed = 0;
+    int i, waited, changed = 0, fail_after = -1;
 
     vita2d_init();
     vita2d_set_clear_color(RGBA8(28, 52, 86, 255));
@@ -307,6 +307,12 @@ int main(void)
         return 0;
     }
     sscanf(job, "v1 %31s", ver);
+#ifdef CO_TEST
+    { /* a test build's helper only: stop after N changed files, to try the rollback */
+        const char *t = strstr(job, "test-fail-after ");
+        if (t) fail_after = atoi(t + 16);
+    }
+#endif
     free(job);
     {
         char title[16] = "";
@@ -370,6 +376,10 @@ int main(void)
             goto undo;
         }
         changed++;
+        if (fail_after >= 0 && changed >= fail_after) {
+            snprintf(msg, sizeof msg, "failed test stop after %d files\n", changed);
+            goto undo;
+        }
     }
     draw(1);
     logf_("%d of %d files changed", changed, nfiles);

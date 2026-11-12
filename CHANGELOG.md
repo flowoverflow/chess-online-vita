@@ -8,6 +8,17 @@
   install only one VPK.
 - The certificate bundle adds the USERTrust roots that GitHub uses.
 - The updater's texts are in all 18 languages.
+- Fixed: two connections starting at once (the chess server and the update check) could get each other's server
+  address, because the system's name lookup is not safe to call from two threads at once. The handshake then failed
+  until curl's 60-second DNS cache ran out. Name lookups now take turns. This could also have hit the chess
+  connection.
+- The release check retries up to 3 times. After a failed or cancelled update the app doesn't ask again until the
+  next start.
+- Tested on a PS Vita 2000:
+  - 1.0.1 to a newer version, start to finish;
+  - a helper failure halfway, with every file put back;
+  - a tampered download, refused before anything changes;
+  - Cancel during a real GitHub download.
 
 ## 1.0.0 (2026-11-12)
 
