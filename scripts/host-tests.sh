@@ -1,0 +1,28 @@
+#!/bin/bash
+# Chess Online: host tests for the portable code.
+# Usage: bash scripts/host-tests.sh
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SRC="$ROOT"
+OUT="$ROOT/build/host"
+mkdir -p "$OUT"
+CFLAGS="-std=c99 -D_POSIX_C_SOURCE=200809L -O2 -Wall -Wextra -Werror -fsanitize=address,undefined -g -I$SRC/src/portable"
+PORTABLE="$SRC/src/portable/chess.c $SRC/src/portable/json.c $SRC/src/portable/cmg.c $SRC/src/portable/engine.c $SRC/src/portable/lessons.c"
+gcc $CFLAGS $PORTABLE "$SRC/tests/test_portable.c" -o "$OUT/test_portable"
+gcc $CFLAGS $PORTABLE "$SRC/tests/test_cmg.c" -o "$OUT/test_cmg"
+gcc $CFLAGS $PORTABLE "$SRC/tests/test_engine.c" -o "$OUT/test_engine"
+gcc $CFLAGS $PORTABLE "$SRC/tests/test_lessons.c" -o "$OUT/test_lessons"
+gcc $CFLAGS "$SRC/src/portable/gamelog.c" "$SRC/tests/test_gamelog.c" -o "$OUT/test_gamelog"
+gcc $CFLAGS "$SRC/src/portable/i18n.c" "$SRC/src/portable/i18n_table.c" "$SRC/tests/test_i18n.c" -o "$OUT/test_i18n"
+echo "== rules and JSON"
+"$OUT/test_portable"
+echo "== Coolmath guest protocol"
+"$OUT/test_cmg"
+echo "== engine"
+"$OUT/test_engine"
+echo "== lessons"
+"$OUT/test_lessons"
+echo "== statistics"
+"$OUT/test_gamelog"
+echo "== languages"
+"$OUT/test_i18n"
