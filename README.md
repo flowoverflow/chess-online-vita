@@ -67,6 +67,13 @@ language table.
 | `res/` | pictures, fonts and the language flags packed into the VPK, with `res/LICENSES.md` |
 | `tools/cmg_check.py` | a small PC client for the guest server (Python standard library only), used as the partner in private test games |
 
+## AI assistance
+
+This project was developed with a lot of help from **Claude Code**, Anthropic's AI coding agent, running **Claude
+Opus 5.5** at extra-high effort. Claude Code wrote and reviewed much of the code, the tests, the translations and the
+documentation, and ran the builds and the tests on a real PS Vita. A person directed the project: the design, the
+artwork and every decision about what to build. Treat it like any other hobby code: read it before you rely on it.
+
 ## Licence
 
 - The app's own code is under the MIT licence (`LICENSE`).
